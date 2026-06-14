@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Chess Timer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="setup-screen">
+    <h1>Chess Timer</h1>
+
+    <div class="mode-row">
+      <button id="btn-two-player" class="mode-btn selected">Two Player</button>
+      <button id="btn-single-clock" class="mode-btn">Single Clock</button>
+    </div>
+
+    <div class="time-configs">
+      <div class="player-config" id="p1-config">
+        <div class="player-label">Player 1</div>
+        <div class="presets" data-player="1">
+          <button class="preset-btn" data-minutes="1">1m</button>
+          <button class="preset-btn" data-minutes="3">3m</button>
+          <button class="preset-btn selected" data-minutes="5">5m</button>
+          <button class="preset-btn" data-minutes="10">10m</button>
+          <button class="preset-btn" data-minutes="15">15m</button>
+          <button class="preset-btn" data-minutes="30">30m</button>
+        </div>
+        <input class="custom-input" id="p1-custom" type="number" min="1" max="180" placeholder="Custom (min)">
+      </div>
+
+      <div class="player-config" id="p2-config">
+        <div class="player-label">Player 2</div>
+        <div class="presets" data-player="2">
+          <button class="preset-btn" data-minutes="1">1m</button>
+          <button class="preset-btn" data-minutes="3">3m</button>
+          <button class="preset-btn selected" data-minutes="5">5m</button>
+          <button class="preset-btn" data-minutes="10">10m</button>
+          <button class="preset-btn" data-minutes="15">15m</button>
+          <button class="preset-btn" data-minutes="30">30m</button>
+        </div>
+        <input class="custom-input" id="p2-custom" type="number" min="1" max="180" placeholder="Custom (min)">
+      </div>
+    </div>
+
+    <button id="start-btn">Start Game</button>
+  </div>
+
+  <div id="game-screen" class="hidden">
+    <div class="controls-bar">
+      <button id="new-game-btn">New Game</button>
+      <button id="pause-btn">Pause</button>
+    </div>
+    <div class="panels">
+      <div id="p1-panel" class="player-panel">
+        <div class="player-name">Player 1</div>
+        <div class="timer" id="p1-time">5:00</div>
+      </div>
+      <div id="p2-panel" class="player-panel">
+        <div class="player-name">Player 2</div>
+        <div class="timer" id="p2-time">5:00</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-over" class="hidden">
+    <div class="game-over-box">
+      <div id="game-over-msg"></div>
+      <button id="play-again-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

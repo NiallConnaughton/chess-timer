@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Chess Timer</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -52,10 +52,6 @@
   </div>
 
   <div id="game-screen" class="hidden">
-    <div class="controls-bar">
-      <button id="new-game-btn">New Game</button>
-      <button id="pause-btn">Pause</button>
-    </div>
     <div class="panels">
       <div id="p1-panel" class="player-panel">
         <div class="player-piece">♔</div>
@@ -68,6 +64,10 @@
         <div class="timer" id="p2-time">5:00</div>
       </div>
       <button id="switch-btn" aria-label="Switch player">♞</button>
+    </div>
+    <div class="controls-bar">
+      <button id="new-game-btn">New Game</button>
+      <button id="pause-btn">Pause</button>
     </div>
   </div>
 

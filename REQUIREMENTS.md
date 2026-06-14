@@ -22,7 +22,7 @@ A simple, kid-friendly chess clock website built for playing with my son.
 
 | Action | Input |
 |---|---|
-| Switch active player | Spacebar or tap the active player's panel |
+| Switch active player | Spacebar, tap the active player's panel, or the switch button |
 | Start / Resume game | Spacebar or start button (from setup or pause) |
 | Pause game | Dedicated pause button |
 | Reset / New game | Button that returns to setup screen |
@@ -33,18 +33,23 @@ A simple, kid-friendly chess clock website built for playing with my son.
 
 ### Layout
 - Two large panels filling the screen (top/bottom split on portrait, left/right on landscape).
-- The active player's panel is visually highlighted (distinct background color or border).
-- The inactive player's panel is dimmed.
+- A single prominent switch button sits centered on the divider between the two panels.
+- The active player's panel is visually highlighted: rich blue background with a colored inset border.
+- The inactive player's panel has a near-black background to maximise contrast.
 - Timer display is large, centered in each panel.
 
 ### Timer Color Cues
 | State | Condition | Color |
 |---|---|---|
-| Normal | > 30 seconds remaining | White |
-| Warning | ≤ 30 seconds remaining | Yellow |
-| Critical | ≤ 10 seconds remaining | Red |
+| Normal | > 2 minutes remaining | White |
+| Warning | ≤ 2 minutes remaining | Yellow |
+| Critical | ≤ 1 minute remaining | Red |
 
-(Thresholds should be constants in the code, easy to adjust.)
+(Thresholds are constants in the code, easy to adjust.)
+
+### Chess Theming
+- Chess piece icons (♔ white king, ♚ black king) appear next to player labels on the setup screen and inside each panel on the game screen.
+- The switch button uses a knight icon (♞).
 
 ### General Style
 - Clean, minimal design — no distracting animations beyond color changes.
@@ -57,20 +62,21 @@ A simple, kid-friendly chess clock website built for playing with my son.
 
 ### 1. Setup Screen
 - Select mode: Two-Player or Single-Clock.
+- Name input for each player (defaults to "Player 1" / "Player 2").
 - Set time for Player 1 (parent) — common presets plus a custom input.
-- Set time for Player 2 (child) — same options (hidden / grayed out in Single-Clock mode).
+- Set time for Player 2 (child) — same options (grayed out in Single-Clock mode).
 - "Start Game" button.
 - Preset options: 1 min, 3 min, 5 min, 10 min, 15 min, 30 min, custom.
 
 ### 2. Game Screen
-- Two panels with running timers.
-- Pause button (small, unobtrusive).
-- "New Game" button to return to setup.
-- No other chrome.
+- Two panels with running timers and player name/piece icon.
+- Prominent switch button centered on the divider between panels.
+- Pause button and "New Game" button in a thin header bar.
 
 ### 3. Game Over State
-- Overlay or panel change indicating which player ran out of time.
-- "Play Again" button (returns to setup with same settings pre-filled).
+- No overlay. The losing player's panel turns yellow and shows 0:00.
+- The other panel stays as-is. Players decide when they want a new game.
+- "New Game" button in the header returns to setup.
 
 ---
 

@@ -49,95 +49,152 @@ async def run():
         await page.screenshot(path=shot("01_setup.png"))
         print("✓ Setup screen loaded")
 
-        two_player  = await page.is_visible("#btn-two-player")
-        single_clock = await page.is_visible("#btn-single-clock")
-        print(f"  Mode buttons: Two Player={two_player}, Single Clock={single_clock}")
+        assert await page.is_visible("#btn-two-player"),   "Two Player button missing"
+        assert await page.is_visible("#btn-single-clock"), "Single Clock button missing"
 
         presets  = await page.locator(".preset-btn").count()
         selected = await page.locator(".preset-btn.selected").all_text_contents()
+        assert presets == 12,              f"Expected 12 preset buttons, got {presets}"
+        assert selected == ["5m", "5m"],   f"Expected both players on 5m, got {selected}"
         print(f"  Preset buttons: {presets}, pre-selected: {selected}")
 
-        # ── Start game ──────────────────────────────────────────────────
+        # ── Name inputs ─────────────────────────────────────────────────
+        assert await page.is_visible("#p1-name-input"), "P1 name input missing"
+        assert await page.is_visible("#p2-name-input"), "P2 name input missing"
+
+        assert await page.get_attribute("#p1-name-input", "placeholder") == "Player 1"
+        assert await page.get_attribute("#p2-name-input", "placeholder") == "Player 2"
+        print("✓ Name inputs present with correct placeholders")
+
+        # ── Chess piece icons on setup ──────────────────────────────────
+        piece_icons = await page.locator(".piece-icon").all_text_contents()
+        assert "♔" in piece_icons, "White king icon missing from setup"
+        assert "♚" in piece_icons, "Black king icon missing from setup"
+        print(f"  Chess pieces on setup: {piece_icons}")
+
+        # ── Custom names flow through to game screen ─────────────────────
+        await page.fill("#p1-name-input", "Dad")
+        await page.fill("#p2-name-input", "Kid")
         await page.click("#start-btn")
         await page.wait_for_timeout(300)
         await page.screenshot(path=shot("02_game_start.png"))
-        print("✓ Game started")
 
+        assert await page.text_content("#p1-name-display") == "Dad", "P1 name not shown"
+        assert await page.text_content("#p2-name-display") == "Kid", "P2 name not shown"
+        print("✓ Custom names shown on game screen")
+
+        # ── Chess piece icons on game screen ────────────────────────────
+        panel_pieces = await page.locator(".player-piece").all_text_contents()
+        assert "♔" in panel_pieces, "White king missing from game panel"
+        assert "♚" in panel_pieces, "Black king missing from game panel"
+        print(f"  Chess pieces on game screen: {panel_pieces}")
+
+        # ── P1 clock counts down, panel highlighted ─────────────────────
         p1_start = await page.text_content("#p1-time")
-        p2_start = await page.text_content("#p2-time")
-        print(f"  Timers at start: P1={p1_start}, P2={p2_start}")
-
-        # ── P1 clock counts down ────────────────────────────────────────
         await page.wait_for_timeout(2000)
         p1_after = await page.text_content("#p1-time")
-        p1_class  = await page.get_attribute("#p1-panel", "class")
-        print(f"  P1 after 2s: {p1_after}  (panel: {p1_class})")
-        assert p1_after != p1_start, "P1 clock did not tick"
-        assert "active" in p1_class, "P1 panel not highlighted"
-
-        # ── Spacebar switches to P2 ─────────────────────────────────────
-        await page.keyboard.press("Space")
-        await page.wait_for_timeout(300)
-        await page.screenshot(path=shot("03_p2_active.png"))
         p1_class = await page.get_attribute("#p1-panel", "class")
-        p2_class = await page.get_attribute("#p2-panel", "class")
-        print(f"  After spacebar: P1={p1_class}, P2={p2_class}")
-        assert "active" not in p1_class, "P1 still active after switch"
-        assert "active" in p2_class, "P2 not active after switch"
+        assert p1_after != p1_start,  "P1 clock did not tick"
+        assert "active" in p1_class,  "P1 panel not highlighted"
+        print(f"  P1 after 2s: {p1_after}  (panel: {p1_class})")
+
+        # ── Switch button present and enabled while running ─────────────
+        assert await page.is_visible("#switch-btn"),                        "Switch button missing"
+        assert await page.get_attribute("#switch-btn", "disabled") is None, "Switch button should be enabled"
+        print("✓ Switch button visible and enabled")
+
+        # ── Switch button switches player ───────────────────────────────
+        await page.click("#switch-btn")
+        await page.wait_for_timeout(300)
+        await page.screenshot(path=shot("03_p2_active_via_button.png"))
+        assert "active" not in await page.get_attribute("#p1-panel", "class"), "P1 still active after switch"
+        assert "active"     in await page.get_attribute("#p2-panel", "class"), "P2 not active after switch"
+        print("✓ Switch button switches active player")
 
         # ── P2 clock counts down ────────────────────────────────────────
         p2_before = await page.text_content("#p2-time")
         await page.wait_for_timeout(1100)
         p2_after  = await page.text_content("#p2-time")
-        print(f"  P2 time: {p2_before} → {p2_after}")
         assert p2_after != p2_before, "P2 clock did not tick"
+        print(f"  P2 time: {p2_before} → {p2_after}")
 
-        # ── Pause / Resume ──────────────────────────────────────────────
+        # ── Spacebar switches player ────────────────────────────────────
+        await page.keyboard.press("Space")
+        await page.wait_for_timeout(300)
+        assert "active" in await page.get_attribute("#p1-panel", "class"), "P1 not active after spacebar"
+        print("✓ Spacebar switches active player")
+
+        # ── Pause disables switch button ────────────────────────────────
         await page.click("#pause-btn")
         await page.wait_for_timeout(300)
         await page.screenshot(path=shot("04_paused.png"))
-        btn_text = await page.text_content("#pause-btn")
-        print(f"  Pause btn after click: '{btn_text}'")
-        assert btn_text == "Resume", f"Expected 'Resume', got '{btn_text}'"
+        assert await page.text_content("#pause-btn") == "Resume",             "Expected 'Resume' when paused"
+        assert await page.get_attribute("#switch-btn", "disabled") is not None, "Switch button should be disabled when paused"
+        print("✓ Pause disables switch button")
 
+        # ── Resume re-enables switch button ────────────────────────────
         await page.keyboard.press("Space")
         await page.wait_for_timeout(200)
-        btn_text = await page.text_content("#pause-btn")
-        print(f"  Pause btn after spacebar resume: '{btn_text}'")
-        assert btn_text == "Pause", f"Expected 'Pause', got '{btn_text}'"
+        assert await page.text_content("#pause-btn") == "Pause",          "Expected 'Pause' after resume"
+        assert await page.get_attribute("#switch-btn", "disabled") is None, "Switch button should be enabled after resume"
+        print("✓ Resume re-enables switch button")
 
-        # ── New Game returns to setup ────────────────────────────────────
+        # ── Game over: timed-out panel turns yellow ─────────────────────
+        # Force P1's time close to zero via JS so we don't wait 5 minutes.
+        await page.evaluate("state.times[0] = 500")
+        await page.wait_for_timeout(800)
+        await page.screenshot(path=shot("05_game_over.png"))
+
+        p1_class = await page.get_attribute("#p1-panel", "class")
+        p2_class = await page.get_attribute("#p2-panel", "class")
+        assert "timed-out" in p1_class, f"P1 panel should have timed-out class, got: {p1_class}"
+        assert "timed-out" not in p2_class, "P2 panel should not be timed-out"
+        assert await page.get_attribute("#switch-btn", "disabled") is not None, "Switch should be disabled after game over"
+        print("✓ Game over: losing panel gets timed-out class, switch button disabled")
+
+        # ── New Game returns to setup with names pre-filled ─────────────
         await page.click("#new-game-btn")
         await page.wait_for_timeout(300)
-        await page.screenshot(path=shot("05_new_game.png"))
-        assert await page.is_visible("#setup-screen"), "Setup screen not shown after New Game"
-        print("✓ New Game → setup screen")
+        await page.screenshot(path=shot("06_new_game.png"))
+        assert await page.is_visible("#setup-screen"),             "Setup screen not shown after New Game"
+        assert await page.input_value("#p1-name-input") == "Dad", "P1 name not restored"
+        assert await page.input_value("#p2-name-input") == "Kid", "P2 name not restored"
+        print("✓ New Game → setup screen with names pre-filled")
 
-        # ── Single Clock mode ───────────────────────────────────────────
+        # ── Single Clock: time controls hidden, label + name fully visible ──
         await page.click("#btn-single-clock")
         await page.wait_for_timeout(200)
-        p2_cfg = await page.get_attribute("#p2-config", "class")
-        print(f"  P2 config class in single-clock: {p2_cfg}")
-        assert "disabled" in p2_cfg, "P2 config not disabled in single-clock mode"
-        await page.screenshot(path=shot("06_single_clock_setup.png"))
+
+        # Time controls div must be hidden
+        assert not await page.is_visible("#p2-time-controls"), "P2 time controls should be hidden in single-clock mode"
+        # Label and name input must be fully visible and interactive
+        assert await page.is_visible("#p2-name-input"), "P2 name input should be visible in single-clock mode"
+        await page.fill("#p2-name-input", "TestKid")
+        assert await page.input_value("#p2-name-input") == "TestKid", "P2 name input not editable in single-clock mode"
+        await page.screenshot(path=shot("07_single_clock_setup.png"))
+        print("✓ Single Clock: time controls hidden, P2 label and name input fully visible")
 
         await page.click("#start-btn")
         await page.wait_for_timeout(500)
-        p2_display = await page.text_content("#p2-time")
-        print(f"  P2 display in single-clock game: '{p2_display}'")
-        assert p2_display == "—", f"Expected '—', got '{p2_display}'"
-        await page.screenshot(path=shot("07_single_clock_game.png"))
+        assert await page.text_content("#p2-time") == "—", "P2 should show '—' in single-clock mode"
+        assert await page.text_content("#p2-name-display") == "TestKid", "P2 name should appear in game panel"
+        await page.screenshot(path=shot("08_single_clock_game.png"))
+        print("✓ Single Clock: P2 shows '—', custom name shown in panel")
 
-        # ── Results ─────────────────────────────────────────────────────
+        # NOTE: Timer color thresholds (warning at 2 min, critical at 1 min) are
+        # not integration-tested here as they'd require waiting 1–2 minutes.
+        # The constants WARNING_MS / CRITICAL_MS in app.js are the source of truth.
+
         await browser.close()
         server.shutdown()
 
-        if errors:
-            print(f"\n✗ JS errors ({len(errors)}):")
-            for e in errors:
-                print(f"  {e}")
-        else:
-            print("\n✓ All checks passed, no JS errors")
-            print(f"  Screenshots saved to screenshots/")
+    if errors:
+        print(f"\n✗ JS errors ({len(errors)}):")
+        for e in errors:
+            print(f"  {e}")
+        raise SystemExit(1)
+    else:
+        print("\n✓ All checks passed, no JS errors")
+        print(f"  Screenshots saved to screenshots/")
 
 asyncio.run(run())

@@ -1,6 +1,6 @@
-const WARNING_MS  = 30_000;
-const CRITICAL_MS = 10_000;
-const TICK_MS     = 100;
+const WARNING_MS  = 120_000;  // 2 minutes
+const CRITICAL_MS =  60_000;  // 1 minute
+const TICK_MS     =     100;
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -11,20 +11,21 @@ const state = {
   running:      false,
   over:         false,
   tickId:       null,
-  lastSettings: null,          // { mode, times: [ms, ms] }
+  lastSettings: null,          // { mode, times: [ms, ms], names: [str, str] }
 };
 
 // ── DOM ────────────────────────────────────────────────────────────────────
 
-const setupScreen = document.getElementById('setup-screen');
-const gameScreen  = document.getElementById('game-screen');
-const gameOverEl  = document.getElementById('game-over');
-const panels      = [document.getElementById('p1-panel'), document.getElementById('p2-panel')];
-const timerEls    = [document.getElementById('p1-time'),  document.getElementById('p2-time')];
-const pauseBtn    = document.getElementById('pause-btn');
-const gameOverMsg = document.getElementById('game-over-msg');
-const configs     = [document.getElementById('p1-config'), document.getElementById('p2-config')];
-const customs     = [document.getElementById('p1-custom'), document.getElementById('p2-custom')];
+const setupScreen  = document.getElementById('setup-screen');
+const gameScreen   = document.getElementById('game-screen');
+const panels       = [document.getElementById('p1-panel'),        document.getElementById('p2-panel')];
+const timerEls     = [document.getElementById('p1-time'),         document.getElementById('p2-time')];
+const nameDisplays = [document.getElementById('p1-name-display'), document.getElementById('p2-name-display')];
+const nameInputs   = [document.getElementById('p1-name-input'),   document.getElementById('p2-name-input')];
+const pauseBtn     = document.getElementById('pause-btn');
+const switchBtn    = document.getElementById('switch-btn');
+const p2TimeControls = document.getElementById('p2-time-controls');
+const customs      = [document.getElementById('p1-custom'), document.getElementById('p2-custom')];
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 
@@ -44,16 +45,21 @@ function render() {
     } else {
       el.textContent = fmt(state.times[i]);
       const ms = state.times[i];
-      el.className = 'timer' +
-        (ms <= CRITICAL_MS ? ' critical' : ms <= WARNING_MS ? ' warning' : '');
+      // Don't apply warning/critical classes to the timed-out panel;
+      // .timed-out CSS handles its appearance.
+      const timedOut = state.over && i === state.active;
+      el.className = timedOut ? 'timer' :
+        'timer' + (ms <= CRITICAL_MS ? ' critical' : ms <= WARNING_MS ? ' warning' : '');
     }
   });
 
-  panels.forEach((el, i) =>
-    el.classList.toggle('active', i === state.active && state.running)
-  );
+  panels.forEach((el, i) => {
+    el.classList.toggle('active',    i === state.active && state.running);
+    el.classList.toggle('timed-out', state.over && i === state.active);
+  });
 
   pauseBtn.textContent = state.running ? 'Pause' : 'Resume';
+  switchBtn.disabled = !state.running || state.over;
 }
 
 // ── Game logic ─────────────────────────────────────────────────────────────
@@ -95,9 +101,6 @@ function switchPlayer() {
 function endGame() {
   stopTicking();
   state.over = true;
-  gameOverMsg.textContent =
-    `${state.active === 0 ? 'Player 1' : 'Player 2'}'s time is up!`;
-  gameOverEl.classList.remove('hidden');
   render();
 }
 
@@ -111,8 +114,10 @@ function showGame(settings) {
   state.over   = false;
   stopTicking();
 
+  panels.forEach(p => p.classList.remove('timed-out'));
+  nameDisplays.forEach((el, i) => { el.textContent = settings.names[i]; });
+
   setupScreen.classList.add('hidden');
-  gameOverEl.classList.add('hidden');
   gameScreen.classList.remove('hidden');
 
   render();
@@ -122,8 +127,8 @@ function showGame(settings) {
 function showSetup() {
   stopTicking();
   state.over = false;
+  panels.forEach(p => p.classList.remove('timed-out'));
   gameScreen.classList.add('hidden');
-  gameOverEl.classList.add('hidden');
   setupScreen.classList.remove('hidden');
   if (state.lastSettings) restoreSettings(state.lastSettings);
 }
@@ -133,9 +138,21 @@ function showSetup() {
 const selMinutes = [5, 5];
 let selMode = 'two-player';
 
+function getName(idx) {
+  return nameInputs[idx].value.trim() || nameInputs[idx].placeholder;
+}
+
 function getMs(idx) {
   const v = parseInt(customs[idx].value, 10);
   return v > 0 ? v * 60_000 : selMinutes[idx] * 60_000;
+}
+
+function readSettings() {
+  return {
+    mode:  selMode,
+    times: [getMs(0), getMs(1)],
+    names: [getName(0), getName(1)],
+  };
 }
 
 function setMode(mode) {
@@ -144,11 +161,14 @@ function setMode(mode) {
     .classList.toggle('selected', mode === 'two-player');
   document.getElementById('btn-single-clock')
     .classList.toggle('selected', mode === 'single-clock');
-  configs[1].classList.toggle('disabled', mode === 'single-clock');
+  p2TimeControls.classList.toggle('hidden', mode === 'single-clock');
 }
 
 function restoreSettings(s) {
   setMode(s.mode);
+  nameInputs.forEach((inp, i) => {
+    inp.value = s.names[i] === inp.placeholder ? '' : s.names[i];
+  });
   [0, 1].forEach(i => {
     const mins = s.times[i] / 60_000;
     const group = document.querySelector(`.presets[data-player="${i + 1}"]`);
@@ -156,7 +176,7 @@ function restoreSettings(s) {
       btn.classList.toggle('selected', Number(btn.dataset.minutes) === mins)
     );
     if ([1, 3, 5, 10, 15, 30].includes(mins)) {
-      selMinutes[i]   = mins;
+      selMinutes[i]    = mins;
       customs[i].value = '';
     } else {
       customs[i].value = mins;
@@ -170,7 +190,7 @@ document.querySelectorAll('.presets').forEach(group => {
     btn.addEventListener('click', () => {
       group.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      selMinutes[idx]   = Number(btn.dataset.minutes);
+      selMinutes[idx]    = Number(btn.dataset.minutes);
       customs[idx].value = '';
     });
   });
@@ -188,9 +208,8 @@ document.getElementById('btn-two-player')
 document.getElementById('btn-single-clock')
   .addEventListener('click', () => setMode('single-clock'));
 
-document.getElementById('start-btn').addEventListener('click', () =>
-  showGame({ mode: selMode, times: [getMs(0), getMs(1)] })
-);
+document.getElementById('start-btn')
+  .addEventListener('click', () => showGame(readSettings()));
 
 // ── Game screen controls ───────────────────────────────────────────────────
 
@@ -202,9 +221,7 @@ document.getElementById('pause-btn').addEventListener('click', () => {
 
 document.getElementById('new-game-btn').addEventListener('click', showSetup);
 
-document.getElementById('play-again-btn').addEventListener('click', () => {
-  if (state.lastSettings) showGame(state.lastSettings);
-});
+switchBtn.addEventListener('click', switchPlayer);
 
 panels.forEach((panel, idx) => {
   panel.addEventListener('click', () => {
@@ -220,7 +237,7 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 
   if (!setupScreen.classList.contains('hidden')) {
-    showGame({ mode: selMode, times: [getMs(0), getMs(1)] });
+    showGame(readSettings());
     return;
   }
 

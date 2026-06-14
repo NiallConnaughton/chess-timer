@@ -143,10 +143,11 @@ h1 { font-size: 2rem; letter-spacing: 0.08em; }
 }
 
 @media (max-width: 767px) {
-  /* P1 panel background bleeds to the top edge behind the status bar.
-     Only the panel's own content is pushed below the safe area. */
+  /* P1 panel background bleeds to the top edge.
+     Content is pushed below the status bar / Dynamic Island.
+     max() ensures clearance even when env() returns 0 (regular browser mode). */
   #p1-panel {
-    padding-top: env(safe-area-inset-top, 44px);
+    padding-top: max(env(safe-area-inset-top, 0px), 60px);
   }
 }
 

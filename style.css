@@ -143,11 +143,15 @@ h1 { font-size: 2rem; letter-spacing: 0.08em; }
 }
 
 @media (max-width: 767px) {
-  /* P1 panel background bleeds to the top edge.
-     Content is pushed below the status bar / Dynamic Island.
-     max() ensures clearance even when env() returns 0 (regular browser mode). */
+  /* Bleed to top edge; content clears status bar / Dynamic Island.
+     max() ensures clearance even when env() returns 0 (regular browser mode).
+     The same value is mirrored as padding-bottom on p2 so both panels carry
+     equal total padding — keeping the knight button centred on their boundary. */
   #p1-panel {
     padding-top: max(env(safe-area-inset-top, 0px), 60px);
+  }
+  #p2-panel {
+    padding-bottom: max(env(safe-area-inset-top, 0px), 60px);
   }
 }
 
@@ -184,8 +188,14 @@ h1 { font-size: 2rem; letter-spacing: 0.08em; }
   position: relative;
 }
 
+/* Push panel content clear of the 192px knight button centred at the panel boundary. */
+#p1-panel { padding-bottom: calc(192px / 2); }
+#p2-panel { padding-top: calc(192px / 2); }
+
 @media (orientation: landscape) {
   .panels { flex-direction: row; }
+  #p1-panel { padding-bottom: 0; padding-right: calc(192px / 2); }
+  #p2-panel { padding-top: 0; padding-left: calc(192px / 2); }
 }
 
 @media (min-width: 768px) {
@@ -257,6 +267,13 @@ h1 { font-size: 2rem; letter-spacing: 0.08em; }
 .timer.warning  { color: #f5c518; }
 .timer.critical { color: #e63946; }
 .timer.no-clock { color: #2a2a44; font-size: clamp(2.5rem, 12vw, 6rem); }
+
+@media (max-width: 375px) {
+  /* On iPhone SE the panel height is tight: scale back piece icon and timer
+     minimum so the content stack clears the 192px knight button. */
+  .player-piece { font-size: 2.5rem; }
+  .timer { font-size: clamp(3rem, 16vw, 10rem); }
+}
 
 /* ── Switch button ────────────────────────────────────────────────── */
 

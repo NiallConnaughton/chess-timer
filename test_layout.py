@@ -23,7 +23,6 @@ SCREENSHOTS = os.path.join(os.path.dirname(__file__), "screenshots")
 
 # Portrait viewports for common iPhones
 DEVICES = [
-    {"name": "iphone-se-3rd",    "width": 375, "height": 667},
     {"name": "iphone-14",        "width": 390, "height": 844},
     {"name": "iphone-14-pro-max","width": 430, "height": 932},
 ]

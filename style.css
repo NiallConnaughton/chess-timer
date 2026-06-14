@@ -143,8 +143,10 @@ h1 { font-size: 2rem; letter-spacing: 0.08em; }
 }
 
 @media (max-width: 767px) {
-  #game-screen {
-    padding-top: calc(env(safe-area-inset-top, 50px) + 20px);
+  /* P1 panel background bleeds to the top edge behind the status bar.
+     Only the panel's own content is pushed below the safe area. */
+  #p1-panel {
+    padding-top: env(safe-area-inset-top, 44px);
   }
 }
 

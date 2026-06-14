@@ -2,6 +2,25 @@ const WARNING_MS  = 120_000;  // 2 minutes
 const CRITICAL_MS =  60_000;  // 1 minute
 const TICK_MS     =     100;
 
+// ── Wake lock ──────────────────────────────────────────────────────────────
+
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch (_) {}
+}
+
+function releaseWakeLock() {
+  wakeLock?.release();
+  wakeLock = null;
+}
+
+// Re-acquire after the tab returns to the foreground (OS releases it on hide).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.running) acquireWakeLock();
+});
+
 // ── State ──────────────────────────────────────────────────────────────────
 
 const state = {
@@ -83,6 +102,7 @@ function startTicking() {
   if (state.tickId || state.over) return;
   state.running = true;
   state.tickId  = setInterval(tick, TICK_MS);
+  acquireWakeLock();
   render();
 }
 
@@ -90,6 +110,7 @@ function stopTicking() {
   clearInterval(state.tickId);
   state.tickId = null;
   state.running = false;
+  releaseWakeLock();
 }
 
 function switchPlayer() {
